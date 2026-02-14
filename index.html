@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <title>Valentine's Day</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400&family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Dancing+Script:wght@700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --gold: #ffd700;
+        --heart-red: #ff2d55;
+        --heart-glow: rgba(255, 45, 85, 0.6);
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --font-main: "Outfit", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #050108;
+        font-family: var(--font-main);
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+        color: white;
+      }
+
+      /* Noise Grain Texture Overlay */
+      .grain-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 100;
+        opacity: 0.04;
+        background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+      }
+
+      #canvas-container {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+      }
+
+      /* Matrix Falling Lyric Waterfall - Put BEHIND the heart */
+      #subtitle-container {
+        position: fixed;
+        bottom: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 600px;
+        text-align: center;
+        z-index: 1000;
+        pointer-events: none;
+        font-family: "Montserrat", sans-serif;
+      }
+
+      .subtitle-line {
+        color: #fff;
+        font-size: clamp(0.85rem, 4vw, 1.05rem);
+        font-weight: 200;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+        text-shadow:
+          0 0 15px rgba(255, 255, 255, 0.2),
+          0 0 30px rgba(0, 0, 0, 0.9);
+        line-height: 1.6;
+      }
+
+      .subtitle-line.show {
+        opacity: 0.9;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 480px) {
+        #subtitle-container {
+          bottom: 18%; /* Lift higher on mobile */
+          width: 95%;
+        }
+        .subtitle-line {
+          letter-spacing: 2px;
+          font-weight: 300; /* Slightly thicker on very small screens for readability */
+        }
+      }
+
+      @keyframes shimmer {
+        0%,
+        100% {
+          filter: brightness(1) drop-shadow(0 0 5px white);
+        }
+        50% {
+          filter: brightness(1.3) drop-shadow(0 0 15px white);
+        }
+      }
+
+      @keyframes motion-trail {
+        0%,
+        100% {
+          text-shadow:
+            0 0 15px rgba(255, 255, 255, 0.8),
+            2px 0 5px rgba(255, 45, 85, 0.3);
+        }
+        50% {
+          text-shadow:
+            0 0 25px rgba(255, 255, 255, 1),
+            -2px 0 8px rgba(0, 229, 255, 0.4);
+        }
+      }
+
+      /* Multi-font Styles */
+      .f-script {
+        font-family: "Dancing Script", cursive;
+      }
+      .f-classic {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+      }
+      .f-main {
+        font-family: var(--font-main);
+      }
+
+      /* Multi-color Styles */
+      .c-pink {
+        color: #ff6699;
+        text-shadow: 0 0 10px #ff6699;
+      }
+      .c-gold {
+        color: #ffd700;
+        text-shadow: 0 0 10px #ffd700;
+      }
+      .c-cyan {
+        color: #00e5ff;
+        text-shadow: 0 0 10px #00e5ff;
+      }
+
+      .falling-lyric.echo {
+        font-family: "Dancing Script", cursive;
+        color: #ffb6c1;
+        font-size: 1.2rem;
+      }
+
+      .falling-lyric.system {
+        color: rgba(255, 255, 255, 0.3);
+        font-style: italic;
+        font-size: 0.8rem;
+      }
+
+      /* Start Screen - Interaction Overlay */
+      #start-screen {
+        position: absolute;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(5, 1, 8, 0.4);
+        cursor: pointer;
+        transition: opacity 1.5s ease;
+      }
+
+      #start-screen .hint {
+        font-family: var(--font-main);
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        opacity: 0.6;
+        animation: breathe 2s infinite alternate;
+      }
+
+      @keyframes breathe {
+        from {
+          opacity: 0.3;
+          transform: scale(0.98);
+        }
+        to {
+          opacity: 0.8;
+          transform: scale(1.02);
+        }
+      }
+
+      #start-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Vignette Overlay Enhanced */
+      .vignette-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: radial-gradient(
+          circle,
+          transparent 30%,
+          rgba(0, 0, 0, 0.7) 100%
+        );
+      }
+
+      @keyframes pulse-ring {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(1.5);
+          opacity: 0;
+        }
+      }
+
+      @keyframes ripple {
+        0% {
+          transform: scale(1);
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(3);
+          opacity: 0;
+        }
+      }
+
+      .ripple-effect {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+        animation: ripple 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      /* Audio Control Button Style - Refined & Minimalist */
+      #audio-control {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 2000;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        padding: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      #audio-control svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      #audio-control:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 45, 85, 0.15);
+      }
+
+      @media (max-width: 480px) {
+        #audio-control {
+          bottom: 20px;
+          right: 20px;
+          width: 32px;
+          height: 32px;
+        }
+        #audio-control svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    </style>
+
+    <!-- Import thư viện Three.js -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="grain-overlay"></div>
+    <div class="vignette-overlay"></div>
+
+    <div id="subtitle-container">
+      <div id="subtitle-text" class="subtitle-line"></div>
+    </div>
+
+    <!-- Start Overlay -->
+    <div id="start-screen">
+      <div class="hint">I'm falling in love with you</div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <button id="audio-control" title="Toggle Music">🔊</button>
+
+    <!-- Nhạc nền -->
+    <audio
+      id="bg-music"
+      src="https://linhsama.github.io/valentine2026/music.mp3"
+      loop
+      preload="auto"
+      crossorigin="anonymous"
+    ></audio>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+      import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+      import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+
+      const isMobile = window.innerWidth < 768;
+      const DEFAULT_CAMERA_Z = isMobile ? 85 : 70;
+      const PARTICLE_COUNT = isMobile ? 5000 : 9000;
+
+      const COLORS = {
+        bg: 0x030006,
+        particle1: 0xff0044,
+        particle2: 0xff6699,
+        gold: 0xffd700,
+        stardust: 0xffccff,
+      };
+
+      const STATE = {
+        mode: "SCATTER",
+        heartBeatScale: 1,
+        isResettingCamera: false,
+      };
+
+      const SEQUENCE = [
+        { mode: "SCATTER", duration: 3000 },
+        { mode: "FORMING", duration: 2500 },
+        { mode: "HEART", duration: 180000 }, // Long duration for heartbeat loop
+      ];
+
+      let isStarted = false;
+      let currentStage = 0;
+      let stageTimer = 0;
+
+      let scene, camera, renderer, composer, controls, mainGroup, clock, audio;
+      let particles = [];
+      let sparkles = [];
+      let bgStars;
+
+      class SubtitleManager {
+        constructor(audio, container) {
+          this.audio = audio;
+          this.container = container;
+          this.subtitleEl = document.getElementById("subtitle-text");
+          this.lyrics = this.parseLyrics(`
+      [00:00.00] falls in luv
+      [00:02.00] You look like angel in the earth
+      [00:05.00] I said “I just wanna date with u”
+      [00:09.00] Cuz my heart shake like lost control
+      [00:11.00] When I come close to you
+      [00:14.00] Bae be my dictionary
+      [00:17.00] When I lost in your eyes
+      [00:20.00] I can not realize I was
+      [00:23.00] I'm falling in love with you
+      [00:26.00] Bae I need to go
+      [00:27.30] ノスタルジアに浸る
+      [00:29.00] I guess I was mistake
+      [00:32.00] 私の心がわかりますか?
+      [00:35.00] これ以上待て...
+      [00:38.00] Bae I need to go
+      [00:39.30] ノスタルジアに浸る
+      [00:41.00] I guess I was mistake
+      [00:44.00] 私の心がわかりますか?
+      [00:48.00] これ以上待て
+      [01:14.30] I'm Falling in love with you...
+                `);
+          this.currentIndex = -1;
+        }
+
+        parseLyrics(lrcText) {
+          const lines = lrcText.trim().split("\n");
+          const result = [];
+          const regex = /\[(\d+):(\d+\.\d+)\]\s*(.*)/;
+          lines.forEach((line) => {
+            const match = line.match(regex);
+            if (match) {
+              const minutes = parseInt(match[1]);
+              const seconds = parseFloat(match[2]);
+              const time = minutes * 60 + seconds;
+              const text = match[3] ? match[3].trim() : "";
+              if (text) result.push({ time, text });
+            }
+          });
+          return result.sort((a, b) => a.time - b.time);
+        }
+
+        update(currentTime) {
+          let index = -1;
+          for (let i = 0; i < this.lyrics.length; i++) {
+            if (currentTime >= this.lyrics[i].time) index = i;
+            else break;
+          }
+
+          if (index !== this.currentIndex && index !== -1) {
+            this.currentIndex = index;
+            this.showSubtitle(this.lyrics[index].text);
+          }
+        }
+
+        showSubtitle(text) {
+          if (!this.subtitleEl) return;
+          const cleanText = text.replace(/[()]/g, "").trim();
+          this.subtitleEl.classList.remove("show");
+          setTimeout(() => {
+            this.subtitleEl.textContent = cleanText;
+            this.subtitleEl.classList.add("show");
+          }, 200);
+        }
+
+        reset() {
+          this.currentIndex = -1;
+          if (this.subtitleEl) {
+            this.subtitleEl.classList.remove("show");
+            this.subtitleEl.textContent = "";
+          }
+        }
+      }
+
+      class ParticleMagic {
+        constructor(mesh) {
+          this.mesh = mesh;
+          this.baseScale = 0.4 + Math.random() * 1.2;
+          this.posHeart = new THREE.Vector3();
+          this.posScatter = new THREE.Vector3();
+          this.posForeground = new THREE.Vector3();
+          this.speed = 1.0 + Math.random() * 2.5;
+          this.rotationSpeed = (Math.random() - 0.5) * 5;
+          this.waveOffset = Math.random() * Math.PI * 2;
+          this.waveSpeed = 0.5 + Math.random() * 1.5;
+          this.isForeground = Math.random() < 0.15;
+          this.isFirefly = Math.random() > 0.95;
+          this.fireflyAngle = Math.random() * Math.PI * 2;
+          this.fireflyRadius = 14 + Math.random() * 10;
+          this.fireflySpeed = 0.5 + Math.random() * 1.5;
+          this.fireflyYOffset = (Math.random() - 0.5) * 20;
+
+          this.calculatePositions();
+          this.mesh.position.copy(this.posScatter);
+          this.mesh.scale.setScalar(0);
+        }
+
+        calculatePositions() {
+          const t = Math.random() * Math.PI * 2;
+          const x_base = 16 * Math.pow(Math.sin(t), 3);
+          const y_base =
+            13 * Math.cos(t) -
+            5 * Math.cos(2 * t) -
+            2 * Math.cos(3 * t) -
+            Math.cos(4 * t);
+          const scale = isMobile ? 0.55 : 0.7;
+
+          const type = Math.random();
+          let r = 0,
+            z = 0;
+          if (type < 0.5) {
+            r = 0.95 + Math.random() * 0.1;
+            z = (Math.random() - 0.5) * 4;
+          } else {
+            r = Math.pow(Math.random(), 0.6);
+            const dist2D = Math.sqrt(x_base * x_base + y_base * y_base);
+            const curveShape = Math.max(0, 1 - Math.pow(dist2D / 18, 1.5));
+            z = (Math.random() - 0.5) * 15 * curveShape;
+          }
+
+          this.posHeart.set(
+            x_base * scale * r,
+            y_base * scale * r,
+            z * scale * r,
+          );
+
+          const radius = 25 + Math.random() * 50;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+          this.posScatter.set(
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta),
+            radius * Math.cos(phi),
+          );
+
+          const fgX = (Math.random() - 0.5) * window.innerWidth * 0.08;
+          const fgY = (Math.random() - 0.5) * window.innerHeight * 0.08;
+          this.posForeground.set(fgX, fgY, 20 + Math.random() * 30);
+        }
+
+        update(delta, time, mode, heartBeatScale) {
+          let targetPos = new THREE.Vector3();
+          let targetScale = this.baseScale;
+          let lerpSpeed = this.speed;
+
+          const floatingOffset = new THREE.Vector3(
+            Math.sin(time * this.waveSpeed + this.waveOffset) * 0.8,
+            Math.cos(time * this.waveSpeed * 0.8 + this.waveOffset) * 0.8,
+            Math.sin(time * this.waveSpeed * 1.2 + this.waveOffset) * 0.8,
+          );
+
+          if (mode === "SCATTER") {
+            targetPos
+              .copy(this.posScatter)
+              .add(floatingOffset.clone().multiplyScalar(3));
+            this.mesh.rotation.x += this.rotationSpeed * delta;
+            this.mesh.rotation.y += this.rotationSpeed * delta;
+          } else if (mode === "FORMING") {
+            if (this.isFirefly) {
+              this.fireflyAngle += this.fireflySpeed * 0.5 * delta;
+              targetPos.set(
+                Math.cos(this.fireflyAngle) * this.fireflyRadius,
+                this.fireflyYOffset + Math.sin(time * 2 + this.waveOffset) * 5,
+                Math.sin(this.fireflyAngle) * this.fireflyRadius,
+              );
+              targetScale = this.baseScale * 1.5;
+              lerpSpeed = 1.0;
+            } else {
+              targetPos
+                .copy(this.posHeart)
+                .add(floatingOffset.clone().multiplyScalar(0.1));
+              lerpSpeed = 0.15 + this.speed * 0.1;
+            }
+          } else if (mode === "HEART") {
+            lerpSpeed = this.speed * 2.0;
+            if (this.isFirefly) {
+              this.fireflyAngle += this.fireflySpeed * delta;
+              targetPos.set(
+                Math.cos(this.fireflyAngle) * this.fireflyRadius,
+                this.fireflyYOffset + Math.sin(time * 2 + this.waveOffset) * 5,
+                Math.sin(this.fireflyAngle) * this.fireflyRadius,
+              );
+              targetScale = this.baseScale * 1.5;
+            } else if (this.isForeground) {
+              targetPos
+                .copy(this.posForeground)
+                .add(floatingOffset.clone().multiplyScalar(2.0));
+              targetScale = this.baseScale * 1.2;
+              lerpSpeed = 0.8;
+            } else {
+              targetPos
+                .copy(this.posHeart)
+                .multiplyScalar(heartBeatScale)
+                .add(floatingOffset.clone().multiplyScalar(0.2));
+            }
+          }
+
+          this.mesh.position.lerp(targetPos, lerpSpeed * delta);
+          if (this.mesh.scale.x < targetScale)
+            this.mesh.scale.addScalar(delta * 0.5);
+          else
+            this.mesh.scale.lerp(
+              new THREE.Vector3(targetScale, targetScale, targetScale),
+              lerpSpeed * delta,
+            );
+        }
+      }
+
+      class Sparkle {
+        constructor() {
+          this.sprite = new THREE.Sprite(sparkleMatHigh.clone());
+          this.active = false;
+        }
+        spawn(centerPos) {
+          this.active = true;
+          this.life = 0;
+          this.maxLife = 0.5 + Math.random() * 0.8;
+          const rand = Math.random();
+          if (rand < 0.33) this.sprite.material.color.setHex(COLORS.gold);
+          else if (rand < 0.66)
+            this.sprite.material.color.setHex(COLORS.particle2);
+          else this.sprite.material.color.setHex(0xffffff);
+
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 2 + Math.random() * 5;
+          this.sprite.position.set(
+            centerPos.x + Math.cos(angle) * radius,
+            centerPos.y + Math.sin(angle) * radius,
+            centerPos.z + (Math.random() - 0.5) * 10,
+          );
+          this.sprite.scale.setScalar(0);
+          mainGroup.add(this.sprite);
+        }
+        update(delta) {
+          if (!this.active) return;
+          this.life += delta;
+          if (this.life >= this.maxLife) {
+            this.active = false;
+            mainGroup.remove(this.sprite);
+            return;
+          }
+          const progress = this.life / this.maxLife;
+          const scale = progress < 0.2 ? progress * 8 : (1 - progress) * 2;
+          this.sprite.scale.setScalar(scale);
+          this.sprite.material.opacity = 1 - progress;
+        }
+      }
+
+      function setupInteraction() {
+        const startScreen = document.getElementById("start-screen");
+        audio = document.getElementById("bg-music");
+        const subtitleCont = document.getElementById("subtitle-container");
+        window._subtitleManager = new SubtitleManager(audio, subtitleCont);
+        window._lastInteraction = Date.now();
+
+        const updateInteractionTime = () => {
+          window._lastInteraction = Date.now();
+        };
+        window.addEventListener("mousemove", updateInteractionTime);
+        window.addEventListener("mousedown", updateInteractionTime);
+        window.addEventListener("touchstart", updateInteractionTime);
+        window.addEventListener("wheel", updateInteractionTime);
+
+        const audioBtn = document.getElementById("audio-control");
+        const icons = {
+          play: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
+          pause: `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
+          volumeUp: `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`,
+          volumeMute: `<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`,
+        };
+
+        const updateAudioIcon = () => {
+          const isSilent = audio.paused || audio.muted || audio.volume === 0;
+          audioBtn.innerHTML = isSilent ? icons.volumeMute : icons.volumeUp;
+        };
+
+        const startExperience = () => {
+          if (isStarted) return;
+
+          // Force active state
+          audio.muted = false;
+          audio.volume = 1.0;
+
+          // Direct play call
+          audio
+            .play()
+            .then(updateAudioIcon)
+            .catch((e) => console.log("Start play failed", e));
+
+          startScreen.classList.add("hidden");
+          isStarted = true;
+          stageTimer = 0;
+          currentStage = 0;
+          if (window._subtitleManager) window._subtitleManager.reset();
+        };
+
+        const toggleAudio = (e) => {
+          if (e) e.stopPropagation();
+
+          if (audio.paused || audio.muted || audio.volume === 0) {
+            audio.muted = false;
+            audio.volume = 1.0;
+            audio.play().then(updateAudioIcon);
+          } else {
+            audio.pause();
+            updateAudioIcon();
+          }
+
+          if (!isStarted) startExperience();
+        };
+
+        audioBtn.addEventListener("click", toggleAudio);
+        audioBtn.addEventListener(
+          "touchstart",
+          (e) => {
+            e.preventDefault();
+            toggleAudio();
+          },
+          { passive: false },
+        );
+
+        // Attach directly to the overlay and window with multiple event types
+        const events = ["click", "touchstart", "mousedown"];
+        events.forEach((evt) => {
+          startScreen.addEventListener(evt, startExperience, { once: true });
+          window.addEventListener(evt, startExperience, { once: true });
+        });
+
+        // Listen for audio events to keep icon in sync
+        audio.addEventListener("play", updateAudioIcon);
+        audio.addEventListener("pause", updateAudioIcon);
+        audio.addEventListener("volumechange", updateAudioIcon);
+
+        // Initial icon state
+        updateAudioIcon();
+      }
+
+      function createRipple(x, y) {
+        const ripple = document.createElement("div");
+        ripple.className = "ripple-effect";
+        ripple.style.left = x - 25 + "px";
+        ripple.style.top = y - 25 + "px";
+        ripple.style.width = "50px";
+        ripple.style.height = "50px";
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove());
+      }
+
+      document.addEventListener("click", (e) =>
+        createRipple(e.clientX, e.clientY),
+      );
+      document.addEventListener(
+        "touchstart",
+        (e) =>
+          e.touches[0] &&
+          createRipple(e.touches[0].clientX, e.touches[0].clientY),
+      );
+
+      const sparkleTexture = (() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext("2d");
+        const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+        grad.addColorStop(0.4, "rgba(255, 255, 255, 0.5)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 32, 32);
+        return new THREE.CanvasTexture(canvas);
+      })();
+      const sparkleMatHigh = new THREE.SpriteMaterial({
+        map: sparkleTexture,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        const time = clock.getElapsedTime();
+
+        updateTimeline(delta);
+        if (isStarted && window._subtitleManager)
+          window._subtitleManager.update(audio.currentTime);
+        if (STATE.mode === "HEART") {
+          const beatFreq = 1.15;
+          const pulse = Math.pow(Math.sin(time * Math.PI * beatFreq), 16);
+          const pulse2 = Math.pow(
+            Math.sin((time - 0.2) * Math.PI * beatFreq),
+            16,
+          );
+          STATE.heartBeatScale = 1.0 + pulse * 0.12 + pulse2 * 0.06;
+          if (Math.random() < 0.3) {
+            const s = new Sparkle();
+            sparkles.push(s);
+            s.spawn(new THREE.Vector3(0, 0, 0));
+          }
+        } else {
+          STATE.heartBeatScale = 1.0;
+        }
+
+        const inactiveTime = Date.now() - (window._lastInteraction || 0);
+        if (STATE.isResettingCamera) {
+          if (inactiveTime < 100) STATE.isResettingCamera = false;
+          else {
+            const targetPos = new THREE.Vector3(0, 0, DEFAULT_CAMERA_Z);
+            camera.position.lerp(targetPos, delta * 3);
+            controls.target.lerp(new THREE.Vector3(0, 0, 0), delta * 3);
+            if (camera.position.distanceTo(targetPos) < 1)
+              STATE.isResettingCamera = false;
+          }
+        } else if (isStarted) {
+          controls.autoRotate = true;
+          if (inactiveTime > 5000) STATE.isResettingCamera = true;
+        }
+
+        sparkles.forEach((s) => s.update(delta));
+        sparkles = sparkles.filter((s) => s.active);
+        controls.update();
+        if (bgStars) {
+          bgStars.rotation.y += delta * 0.03;
+          bgStars.rotation.x += delta * 0.01;
+        }
+        particles.forEach((p) =>
+          p.update(delta, time, STATE.mode, STATE.heartBeatScale),
+        );
+        mainGroup.position.y = Math.sin(time * 0.8) * 1.0;
+        composer.render();
+      }
+
+      function updateTimeline(delta) {
+        if (!isStarted) return;
+        stageTimer += delta * 1000;
+        const currentObj = SEQUENCE[currentStage];
+        STATE.mode = currentObj.mode;
+        if (stageTimer >= currentObj.duration) {
+          stageTimer = 0;
+          currentStage++;
+          if (currentStage >= SEQUENCE.length) currentStage = 0;
+        }
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+        camera.position.z = window.innerWidth < 768 ? 85 : 70;
+      }
+
+      function init() {
+        const container = document.getElementById("canvas-container");
+        scene = new THREE.Scene();
+        // scene.background = new THREE.Color(COLORS.bg); // Removed for transparency
+        scene.fog = new THREE.FogExp2(COLORS.bg, isMobile ? 0.012 : 0.015);
+        camera = new THREE.PerspectiveCamera(
+          50,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000,
+        );
+        camera.position.set(0, 0, DEFAULT_CAMERA_Z);
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          powerPreference: "high-performance",
+          alpha: true,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
+        renderer.setClearAlpha(0);
+        renderer.autoClear = false;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.8;
+        container.appendChild(renderer.domElement);
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = 0.6;
+        controls.minDistance = 40;
+        controls.maxDistance = 120;
+        mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+        clock = new THREE.Clock();
+
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = isMobile ? 1000 : 2000;
+        const posArray = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount * 3; i++)
+          posArray[i] = (Math.random() - 0.5) * 250;
+        starGeo.setAttribute(
+          "position",
+          new THREE.BufferAttribute(posArray, 3),
+        );
+        bgStars = new THREE.Points(
+          starGeo,
+          new THREE.PointsMaterial({
+            size: 0.15,
+            color: COLORS.stardust,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+          }),
+        );
+        scene.add(bgStars);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+        const centerLight = new THREE.PointLight(COLORS.particle1, 8, 40);
+        mainGroup.add(centerLight);
+        const spotLight = new THREE.SpotLight(COLORS.gold, 8);
+        spotLight.position.set(0, 30, 20);
+        scene.add(spotLight);
+
+        const geoCrystal = new THREE.TetrahedronGeometry(0.12, 0);
+        const geoSphere = new THREE.SphereGeometry(isMobile ? 0.1 : 0.08, 8, 8);
+        const matRed = new THREE.MeshStandardMaterial({
+          color: COLORS.particle1,
+          emissive: COLORS.particle1,
+          emissiveIntensity: 2.2,
+          roughness: 0.1,
+        });
+        const matPink = new THREE.MeshStandardMaterial({
+          color: COLORS.particle2,
+          emissive: COLORS.particle2,
+          emissiveIntensity: 1.8,
+          roughness: 0.2,
+        });
+        const matGold = new THREE.MeshStandardMaterial({
+          color: COLORS.gold,
+          emissive: COLORS.gold,
+          emissiveIntensity: 2.5,
+          metalness: 1,
+        });
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          const rand = Math.random();
+          const mesh = new THREE.Mesh(
+            rand > 0.4 ? geoSphere : geoCrystal,
+            rand > 0.9 ? matGold : rand > 0.65 ? matPink : matRed,
+          );
+          mainGroup.add(mesh);
+          particles.push(new ParticleMagic(mesh));
+        }
+
+        const renderTarget = new THREE.WebGLRenderTarget(
+          window.innerWidth,
+          window.innerHeight,
+          {
+            format: THREE.RGBAFormat,
+          },
+        );
+        composer = new EffectComposer(renderer, renderTarget);
+        const renderPass = new RenderPass(scene, camera);
+        renderPass.clearAlpha = 0;
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+          new THREE.Vector2(window.innerWidth, window.innerHeight),
+          1.8,
+          0.8,
+          0.2,
+        );
+        composer.addPass(bloomPass);
+        composer.renderToScreen = true;
+
+        setupInteraction();
+        window.addEventListener("resize", onWindowResize);
+        animate();
+      }
+
+      init();
+    </script>
+  </body>
+</html>
